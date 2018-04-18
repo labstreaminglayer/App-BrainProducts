@@ -15,7 +15,9 @@
 
 using boost::asio::ip::tcp;
 
-const int RDA_Port = 51244;				// TCP port number of the RDA server 
+const int RECORDER_PORT = 51244;
+const int RECVIEW_PORT = 51254;
+int RDA_Port = 51244;				// TCP port number of the RDA server 
 const double sample_age = 0.02;			// assumed buffer lag
 const int skip_blocks_after_reset = 15;	// number of data blocks to skip after an amplifier reset
 
@@ -32,6 +34,7 @@ ui(new Ui::MainWindow)
 	// make GUI connections
 	QObject::connect(ui->actionQuit, SIGNAL(triggered()), this, SLOT(close()));
 	QObject::connect(ui->linkButton, SIGNAL(clicked()), this, SLOT(link_rda()));
+	QObject::connect(ui->cbPort, SIGNAL(currentIndexChanged(int)), this, SLOT(set_port(int)));
 	QObject::connect(this, SIGNAL(sendMessage(QString)), this, SLOT(statusMessage(QString)));
 	QObject::connect(ui->actionLoad_Configuration, SIGNAL(triggered()), this, SLOT(load_config_dialog()));
 	QObject::connect(ui->actionSave_Configuration, SIGNAL(triggered()), this, SLOT(save_config_dialog()));
@@ -70,8 +73,12 @@ void MainWindow::load_config(const std::string &filename) {
 		return;
 	}
 	// get config values
+	int portIdx;
 	try {
 		ui->serverIP->setText(pt.get<std::string>("settings.serverip","127.0.0.1").c_str());
+		if(pt.get<std::string>("settings.port","51244") == "51244") set_port(1);
+		else set_port(0);
+		
 	} catch(std::exception &) {
 		QMessageBox::information(this,"Error in Config File","Could not read out config parameters.",QMessageBox::Ok);
 		return;
@@ -93,6 +100,14 @@ void MainWindow::save_config(const std::string &filename) {
 	} catch(std::exception &e) {
 		QMessageBox::critical(this,"Error",(std::string("Could not write to config file: ")+=e.what()).c_str(),QMessageBox::Ok);
 	}
+}
+
+void MainWindow::set_port(int idx){
+
+	if(idx==0)
+		RDA_Port = RECORDER_PORT;
+	else
+		RDA_Port = RECVIEW_PORT;
 }
 
 // start/stop the RDA connection
