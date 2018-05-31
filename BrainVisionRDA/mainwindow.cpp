@@ -161,7 +161,7 @@ void MainWindow::read_thread(QString serverIP, int RDA_Port) {
 		emit sendMessage(status);
 		std::string lsl_id = QString("RDA %1:%2").arg(serverIP).arg(RDA_Port).toStdString();
 		long markerCount;
-		long maxMarkerCount = 2 << 24 - 1;
+		long maxMarkerCount = (2 << 24) - 1;
 
 		while(!stop_) {
 			switch(connectionPhase) {
