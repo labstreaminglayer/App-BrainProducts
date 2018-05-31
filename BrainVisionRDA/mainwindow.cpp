@@ -6,18 +6,17 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/foreach.hpp>
+#include <boost/scoped_ptr.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <iostream>
 #include <sstream>
 #include <math.h>
 #include <boost/asio.hpp>
+#include <lsl_cpp.h>
 #include "rda_client.h"
 
 using boost::asio::ip::tcp;
 
-const int RECORDER_PORT = 51244;
-const int RECVIEW_PORT = 51254;
-int RDA_Port = 51244;				// TCP port number of the RDA server 
 const double sample_age = 0.02;			// assumed buffer lag
 const int skip_blocks_after_reset = 15;	// number of data blocks to skip after an amplifier reset
 
@@ -34,7 +33,6 @@ ui(new Ui::MainWindow)
 	// make GUI connections
 	QObject::connect(ui->actionQuit, SIGNAL(triggered()), this, SLOT(close()));
 	QObject::connect(ui->linkButton, SIGNAL(clicked()), this, SLOT(link_rda()));
-	QObject::connect(ui->cbPort, SIGNAL(currentIndexChanged(int)), this, SLOT(set_port(int)));
 	QObject::connect(this, SIGNAL(sendMessage(QString)), this, SLOT(statusMessage(QString)));
 	QObject::connect(ui->actionLoad_Configuration, SIGNAL(triggered()), this, SLOT(load_config_dialog()));
 	QObject::connect(ui->actionSave_Configuration, SIGNAL(triggered()), this, SLOT(save_config_dialog()));
@@ -73,12 +71,9 @@ void MainWindow::load_config(const std::string &filename) {
 		return;
 	}
 	// get config values
-	int portIdx;
 	try {
 		ui->serverIP->setText(pt.get<std::string>("settings.serverip","127.0.0.1").c_str());
-		if(pt.get<std::string>("settings.port","51244") == "51244") set_port(1);
-		else set_port(0);
-		
+		ui->cbPort->setValue(pt.get<int>("settings.port", 51244));
 	} catch(std::exception &) {
 		QMessageBox::information(this,"Error in Config File","Could not read out config parameters.",QMessageBox::Ok);
 		return;
@@ -91,6 +86,7 @@ void MainWindow::save_config(const std::string &filename) {
 	// transfer UI content into property tree
 	try {
 		pt.put("settings.serverip",ui->serverIP->text().toStdString());
+		pt.put("settings.port", ui->cbPort->value());
 	} catch(std::exception &e) {
 		QMessageBox::critical(this,"Error",(std::string("Could not prepare settings for saving: ")+=e.what()).c_str(),QMessageBox::Ok);
 	}
@@ -100,14 +96,6 @@ void MainWindow::save_config(const std::string &filename) {
 	} catch(std::exception &e) {
 		QMessageBox::critical(this,"Error",(std::string("Could not write to config file: ")+=e.what()).c_str(),QMessageBox::Ok);
 	}
-}
-
-void MainWindow::set_port(int idx){
-
-	if(idx==0)
-		RDA_Port = RECORDER_PORT;
-	else
-		RDA_Port = RECVIEW_PORT;
 }
 
 // start/stop the RDA connection
@@ -133,9 +121,10 @@ void MainWindow::link_rda() {
 		try {
 			// get the UI parameters...
 			QString serverIP = ui->serverIP->text();
+			int RDA_Port = ui->cbPort->value();
 			// start reading
 			stop_ = false;
-			reader_thread_.reset(new boost::thread(&MainWindow::read_thread,this,serverIP));
+			reader_thread_.reset(new boost::thread(&MainWindow::read_thread,this,serverIP, RDA_Port));
 		}
 		catch(std::exception &e) {
 			QMessageBox::critical(this,"Error",(std::string("Could not initialize the BrainVision RDA interface: ")+=e.what()).c_str(),QMessageBox::Ok);
@@ -149,7 +138,7 @@ void MainWindow::link_rda() {
 
 
 // background data reader thread
-void MainWindow::read_thread(QString serverIP) {
+void MainWindow::read_thread(QString serverIP, int RDA_Port) {
 	QString status; 
 	int connectionPhase = 0;
 	long blockCounter;
@@ -172,7 +161,7 @@ void MainWindow::read_thread(QString serverIP) {
 		emit sendMessage(status);
 		std::string lsl_id = QString("RDA %1:%2").arg(serverIP).arg(RDA_Port).toStdString();
 		long markerCount;
-		long maxMarkerCount = pow(2.0, 24)-1;
+		long maxMarkerCount = 2 << 24 - 1;
 
 		while(!stop_) {
 			switch(connectionPhase) {

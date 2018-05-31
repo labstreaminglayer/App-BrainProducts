@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>399</width>
-    <height>151</height>
+    <height>203</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -30,17 +30,37 @@
       <item row="0" column="1">
        <widget class="QLineEdit" name="serverIP"/>
       </item>
-      <item row="1" column="1">
+      <item row="2" column="1">
        <widget class="QLabel" name="connectionStatus">
         <property name="text">
          <string/>
         </property>
        </widget>
       </item>
-      <item row="1" column="0">
+      <item row="2" column="0">
        <widget class="QLabel" name="label_2">
         <property name="text">
          <string>Connection Status</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="label">
+        <property name="text">
+         <string>Port</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QSpinBox" name="cbPort">
+        <property name="toolTip">
+         <string>Port to connect to, 51244 is the default recorder port, 51254 the default recview port</string>
+        </property>
+        <property name="maximum">
+         <number>65535</number>
+        </property>
+        <property name="value">
+         <number>51244</number>
         </property>
        </widget>
       </item>
@@ -78,12 +98,12 @@
      <x>0</x>
      <y>0</y>
      <width>399</width>
-     <height>18</height>
+     <height>30</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
     <property name="title">
-     <string>File</string>
+     <string>Fi&amp;le</string>
     </property>
     <addaction name="actionLoad_Configuration"/>
     <addaction name="actionSave_Configuration"/>
@@ -95,12 +115,12 @@
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionLoad_Configuration">
    <property name="text">
-    <string>Load Configuration</string>
+    <string>&amp;Load Configuration</string>
    </property>
   </action>
   <action name="actionSave_Configuration">
    <property name="text">
-    <string>Save Configuration</string>
+    <string>&amp;Save Configuration</string>
    </property>
   </action>
   <action name="actionQuit">
@@ -110,7 +130,7 @@
   </action>
   <action name="actionQuit_2">
    <property name="text">
-    <string>Quit</string>
+    <string>&amp;Quit</string>
    </property>
   </action>
  </widget>
