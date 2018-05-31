@@ -174,7 +174,8 @@ void MainWindow::read_thread(QString serverIP, int RDA_Port) {
 					markerCount = 0;
 				case 1: 
 					// wait for a connection to the RDA server
-					it_resolver = boost::asio::connect(socket_, resolver.resolve(query), ec);
+					resolver.resolve(query);
+					it_resolver = boost::asio::connect(socket_, it_resolver, ec);
 					if(!ec){
 						ep = *it_resolver;
 						std::string addr = ep.address().to_v4().to_string();

@@ -20,7 +20,7 @@ endif()
 set(target ${PROJECT_NAME})
 
 find_package(Qt5 REQUIRED COMPONENTS Widgets)
-find_package(Boost REQUIRED COMPONENTS thread)
+find_package(Boost REQUIRED COMPONENTS system thread)
 
 # add a target for the main executable
 add_executable(${target} MACOSX_BUNDLE WIN32
@@ -33,10 +33,13 @@ add_executable(${target} MACOSX_BUNDLE WIN32
 	regression.h
 )
 
+target_compile_definitions(${target} PRIVATE BOOST_REGEX_NO_LIB)
+
 target_link_libraries(${target}
 	PRIVATE
 	Qt5::Widgets
 	LSL::lsl
+	Boost::system
 	Boost::thread
 )
 
