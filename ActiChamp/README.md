@@ -1,6 +1,8 @@
 == Usage ==
 
 1. Make sure that you have correctly installed the drivers for your amplifier, and that the amplifier is plugged in and ready to use (see also official brochure).
+  * Start the ActiChamp app. You should see a window like the following.
+> ![actichamp.png](actichamp.png)
 
 2. If you have multiple amplifiers plugged in, make sure that you pick the correct one under Device Number (0 is the first one according to USB port numbering). Select the number of channels that you want to record from. The maximum number of channels is determined by the number of modules that are installed in your amplifier. Channels always count from the first module (the one closest to the front of the box). Enter the channel labels according to your cap design; make sure that the number of channel labels matches the selected number of channels.
 
