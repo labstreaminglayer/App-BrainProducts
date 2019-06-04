@@ -78,7 +78,7 @@ LiveAmp::LiveAmp(std::string serialNumberIn, float samplingRateIn, bool useSim, 
 
 					// detect whether or not STE is connected
 					char modName[100];
-					result = ampGetProperty(h, PG_DEVICE, 0, DPROP_I32_AvailableModules, &availableModules, sizeof(availableModules));
+					
 					for (int n = 0; n < availableModules; n++)
 					{
 						result = ampGetProperty(h, PG_MODULE, n, MPROP_CHR_Type, &modName, sizeof(modName));
@@ -148,17 +148,31 @@ void LiveAmp::enumerate(std::vector<std::pair<std::string, int>> &ampData, bool 
 			}		
 			else {
 		
+				int32_t nAvailableModules;
+				//int32_t nAvailableChannels;
+				result = ampGetProperty(hndl, PG_DEVICE, 0, DPROP_I32_AvailableModules, &nAvailableModules, sizeof(nAvailableModules));
 				int32_t iVar;
-				result = ampGetProperty(hndl, PG_MODULE, i, MPROP_I32_UseableChannels, &iVar, sizeof(iVar)); 
-				if(result != AMP_OK) {
-					std::string msg = "Cannot get device channel count: ";
-					msg.append (boost::lexical_cast<std::string>(i).c_str());
-					msg.append("  error= " );
-					msg.append(boost::lexical_cast<std::string>(res).c_str()); // TODO: error enumeration from liveamp driver
-					throw std::runtime_error(msg);
-				}		
-				else
-					ampData.push_back(std::make_pair(std::string(sVar), iVar));
+				//result = ampGetProperty(hndl, PG_DEVICE, 0, DPROP_I32_AvailableChannels, &nAvailableChannels, sizeof(nAvailableChannels));
+				char modName[100];
+				int nTotalAvailableChannels = 0;
+				for (int j = 0; j < nAvailableModules; j++)
+				{
+					result = ampGetProperty(hndl, PG_MODULE, j, MPROP_I32_UseableChannels, &iVar, sizeof(iVar));
+					if (result != AMP_OK) {
+						std::string msg = "Cannot get device channel count: ";
+						msg.append(boost::lexical_cast<std::string>(j).c_str());
+						msg.append("  error= ");
+						msg.append(boost::lexical_cast<std::string>(res).c_str()); // TODO: error enumeration from liveamp driver
+						throw std::runtime_error(msg);
+					}
+					else
+					{
+						result = ampGetProperty(hndl, PG_MODULE, j, MPROP_CHR_Type, &modName, sizeof(modName));
+						if (strcmp(modName, "STE"))
+							nTotalAvailableChannels += iVar;
+					}
+				}
+				ampData.push_back(std::make_pair(std::string(sVar), nTotalAvailableChannels));
 			
 			}
 
@@ -326,23 +340,7 @@ void LiveAmp::enableChannels(const std::vector<int>& eegIndicesIn, const std::ve
 								throw std::runtime_error(("Error SetProperty enable for AUX channels, error: " + boost::lexical_cast<std::string>(res)).c_str());
 						}
 					}
-				}
-				//enable = auxEnable;
-				//if(enable==true) {
-				//	accIndices.push_back(i);
-				//	++enabledChannelCnt;
-				//}
-				//res = ampGetProperty(h, PG_CHANNEL, i, CPROP_B32_RecordingEnabled, &wasEnabled, sizeof(wasEnabled));
-				//if (res != AMP_OK)	
-				//	throw std::runtime_error(("Error SetProperty enable for AUX channels, error: "  + boost::lexical_cast<std::string>(res)).c_str());
-				//	
-				//// if requested, enable it
-				//if(wasEnabled!=enable){
-				//	res = ampSetProperty(h, PG_CHANNEL, i, CPROP_B32_RecordingEnabled, &enable, sizeof(enable));
-				//	if (res != AMP_OK)				
-				//		throw std::runtime_error(("Error SetProperty enable for AUX channels, error: "  + boost::lexical_cast<std::string>(res)).c_str());	
-				//}
-				
+				}			
 			}			
 		}
 		
@@ -351,21 +349,27 @@ void LiveAmp::enableChannels(const std::vector<int>& eegIndicesIn, const std::ve
 			trigIndices.push_back(i);	
 			++enabledChannelCnt;
 		}
+		if (type == CT_DIG)
+		{
+			++enabledChannelCnt;
+		}
 	}
 
 	// get the sample size in bytes and make an array of sample types
 	int dataType;
 	float resolution;
 	int channelType;
+	float gain;
 	int cnt = 0;
 	sampleSize=0;
 	int enabled;
 
+	res = ampStartAcquisition(h);
 	for(int i=0;i<availableChannels;i++) {
 		
 			
 		res = ampGetProperty(h, PG_CHANNEL, i, CPROP_B32_RecordingEnabled, &enabled, sizeof(enabled));
-
+		
 		if (enabled) {
 			res = ampGetProperty(h, PG_CHANNEL, i, CPROP_I32_DataType, &dataType, sizeof(dataType));
 			channelInfoArray[cnt].dataType = dataType;
@@ -373,6 +377,8 @@ void LiveAmp::enableChannels(const std::vector<int>& eegIndicesIn, const std::ve
 			channelInfoArray[cnt].resolution = resolution;
 			res = ampGetProperty(h, PG_CHANNEL, i, CPROP_I32_Type, &channelType, sizeof(channelType));
 			channelInfoArray[cnt++].channelType = channelType;
+			res = ampGetProperty(h, PG_CHANNEL, i, CPROP_F32_Gain, &gain, sizeof(gain));
+			channelInfoArray[cnt].gain = gain;
 
 			switch (dataType)
 			{
@@ -405,7 +411,8 @@ void LiveAmp::enableChannels(const std::vector<int>& eegIndicesIn, const std::ve
 	}
 	// add the sample counter size
 	sampleSize += 8;
-	if(cnt!=enabledChannelCnt+2)// add two because we are ignoring (for now) the CT_DIG channels, which are enabled 
+	res = ampStopAcquisition(h);
+	if(cnt!=enabledChannelCnt)
 		throw std::runtime_error((std::string("Error: Enabled channel counter mismatch in device ") + serialNumber).c_str());	
 }
 

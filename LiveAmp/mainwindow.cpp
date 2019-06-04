@@ -8,8 +8,8 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/foreach.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
-#include <QFutureWatcher>
-#include <QtCore>
+#include <QtCore/QFutureWatcher>
+#include <QtCore/QtCore>
 
 
 
@@ -64,14 +64,16 @@ void MainWindow::update_channel_labels(void) {
 	int bip = ui->bipolarChannelCount->value();
 	int aux = ui->auxChannelCount->value();
 	int acc = (ui->useACC->isChecked()) ? 3 : 0;
-
+	int maxEEG = eeg > 32 ? 64 : 32;
 	overrideAutoUpdate = true;
 	// TODO: parameterize this to follow behavior according to 
 	// available channels
-	if (eeg > 24 && bip != 0) {
-		ui->eegChannelCount->setMaximum(24);
-		eeg = 24;
+	if (eeg > maxEEG - 8 && bip != 0) {
+		ui->eegChannelCount->setMaximum(maxEEG - 8);
+		eeg = maxEEG - 8;
 	}
+	else
+		ui->eegChannelCount->setMaximum(maxEEG);
 	overrideAutoUpdate = false;
 
 	int total_electrodes = eeg + bip;
@@ -405,33 +407,19 @@ void MainWindow::link() {
 				return;
 			}
 
-			// change GUI
-			this->setCursor(Qt::ArrowCursor);
+
 
 			// report
 			if(liveAmp!=NULL);
 				//QMessageBox::information( this,"Connected!", "Click OK to proceed",QMessageBox::Button::Ok);
 
 			else {
+				// change GUI
+				this->setCursor(Qt::ArrowCursor);
 				QMessageBox::critical( this,"Error", "Could not connect to LiveAmp. Please restart the device and check connections.",QMessageBox::Button::Ok);
 				ui->linkButton->setText("Link");
 				return;	
 			}
-			
-			
-			// for now this is hard coded
-			// we simply enumerate eegchannels via labels
-			// this should be flexible and settable via the GUI
-			// i.e. the user can map channel labels to eegIndeces
-			//boost::shared_ptr<std::vector<int>> eegIndices(new std::vector<int>);
-			////eegIndices->clear();
-			//for(int i=0;i<eegChannelLabels.size();i++)
-			//	eegIndices->push_back(i);
-
-			//boost::shared_ptr<std::vector<int>> bipolarIndices(new std::vector<int>);
-			////bipolarIndices->clear();
-			//for(int i=0;i<bipolarChannelLabels.size();i++)
-			//	bipolarIndices->push_back(i+24);
 
 			std::vector<int> eegIndices;
 			//eegIndices->clear();
@@ -451,7 +439,7 @@ void MainWindow::link() {
 			// this will check for availability and will map everything appropriately
 			//liveAmp->enableChannels(*eegIndices, *bipolarIndices, *auxIndices, useACC);
 			liveAmp->enableChannels(eegIndices, bipolarIndices, auxIndices, useACC);
-
+			this->setCursor(Qt::ArrowCursor);
 			// start reader thread
 			stop_ = false;
 			reader_thread_.reset(new boost::thread(&MainWindow::read_thread, this, chunkSize, samplingRate, channelLabels));

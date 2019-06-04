@@ -34,6 +34,7 @@ private:
 		int dataType;
 		float resolution;
 		int channelType;
+		float gain;
 	}t_channelInfo;
 	// int dataTypeArray[100];
 	t_channelInfo channelInfoArray[100];

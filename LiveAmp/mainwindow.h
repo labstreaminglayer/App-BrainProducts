@@ -1,11 +1,11 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include <QMainWindow>
-#include <QCloseEvent>
-#include <QFileDialog>
-#include <QMessageBox>
-#include <QThread>
+#include <QtWidgets/QMainWindow>
+#include <QtGui/QCloseEvent>
+#include <QtWidgets/QFileDialog>
+#include <QtWidgets/QMessageBox>
+#include <QtCore/QThread>
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
 #include <string>

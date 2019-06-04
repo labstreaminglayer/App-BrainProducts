@@ -26,15 +26,18 @@
 //								  ampGetPropertyRange may also return a mask (RT_BITMASK) for the available bits.
 //								- Flash formatting device property  
 //	24.11.2017  Version 3.1		- New device error DEVICE_ERR_SYNC
+//	26.06.2018  Version 3.2		- New ChannelType CT_TIM for timestamps
+//								- New TriggerOutputMode TM_MIROR_SYNC
+//	11.09.2018  Version 3.2		- New device property DPROP_B32_FastDataAccess for the actiCHamp fast data access mode
 //								 
-//	
 /*------------------------------------------------------------------------------------------------*/
 
 
 #pragma once
 
 #ifdef AMPLIFIER_EXPORTS
-#define AMPLIFIER_API __declspec(dllexport)
+//#define AMPLIFIER_API __declspec(dllexport)
+#define AMPLIFIER_API 
 #else
 #define AMPLIFIER_API __declspec(dllimport)
 #endif
@@ -50,7 +53,7 @@
 /*------------------------------------------------------------------------------------------------*/
 
 #define API_MAJOR				(3)			// Application interface major version
-#define API_MINOR				(1)			// Application interface minor version
+#define API_MINOR				(2)			// Application interface minor version
 
 /*------------------------------------------------------------------------------------------------*/
 // Error codes
@@ -146,7 +149,8 @@ typedef enum ChannelType
 	CT_BIP = 1,					// Bipolar channel
 	CT_AUX = 2,					// Auxiliary channel
 	CT_TRG = 3,					// Trigger channel
-	CT_DIG = 4					// Digital channel
+	CT_DIG = 4,					// Digital channel
+	CT_TIM = 5					// Timestamp channel
 } t_ChannelType;
 
 // Channel data types
@@ -212,7 +216,8 @@ typedef enum TriggerOutputMode
 {
 	TM_DEFAULT	= 0,			// The trigger output port is independent from input
 	TM_MIRROR	= 1,			// Copy the trigger input to the trigger output port
-	TM_SYNC		= 2				// Generate an synchronization output signal with a configurable period and pulse width
+	TM_SYNC		= 2,			// Generate an synchronization output signal with a configurable period and pulse width
+	TM_MIRROR_SYNC = 3			// Both mirror and sync mode
 }t_TriggerOutputMode;
 
 // Electrode LED color
@@ -325,6 +330,7 @@ typedef enum DevicePropertyID
 	DPROP_I32_BadImpedanceLevel = 204,			// Bad impedance level in Ohm. Impedances above this level will be shown in red
 	DPROP_I32_LedControl = 205,					// Manual control of the active electrode LEDs (0=off, 1=update all electrodes to the selected values)
 	DPROP_I32_ActiveShieldGain = 206,			// active shielding gain (0=w/o active shielding)
+	DPROP_B32_FastDataAccess = 207,				// Fast data access mode
 
 	// flash recording status and parameters
 	DPROP_UI32_FlashRecordingState = 300,		// device specific flags if recording to internal memory (if available)
