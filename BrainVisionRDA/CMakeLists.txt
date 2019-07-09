@@ -1,29 +1,39 @@
 cmake_minimum_required(VERSION 3.5)
 project(BrainVisionRDA
 	LANGUAGES CXX
-	VERSION 1.12.0)
+	VERSION 0.1.0)
 
-# set up LSL if not done already
+# load LSLAppBoilerplate if not done already
 if(NOT TARGET LSL::lsl)
-	# when building out of tree LSL_ROOT needs to be specified on the cmd line
-	file(TO_CMAKE_PATH "${LSL_INSTALL_ROOT}" LSL_INSTALL_ROOT)
-	list(APPEND LSL_INSTALL_ROOT "${CMAKE_CURRENT_LIST_DIR}/../../../LSL/liblsl/build/install")
-	find_package(LSL HINTS ${LSL_INSTALL_ROOT}/share/LSL/ ${LSL_INSTALL_ROOT}/LSL/share/LSL QUIET)
-	if(NOT LSL_FOUND)
-		message(FATAL_ERROR "Precompiled LSL was not found. Set LSL_INSTALL_ROOT to the LSL installation path ( cmake -DLSL_INSTALL_ROOT=/path/to/installed/lsl)")
+	if(NOT LSL_INSTALL_ROOT)
+		message(FATAL_ERROR "When building a single app out of tree you need to set LSL_INSTALL_ROOT ( cmake -DLSL_INSTALL_ROOT=/path/to/installed/lsl)")
 	endif()
-	list(APPEND CMAKE_MODULE_PATH ${LSL_DIR})
-	message(STATUS "Looking for LSLCMake in ${LSL_DIR}")
-	include(LSLCMake)
+	if(NOT IS_ABSOLUTE ${LSL_INSTALL_ROOT})
+		message(FATAL_ERROR "LSL_INSTALL_ROOT needs to be an absolute path")
+	endif()
+	file(TO_CMAKE_PATH ${LSL_INSTALL_ROOT} LSL_INSTALL_ROOT)
+	list(APPEND CMAKE_MODULE_PATH "${LSL_INSTALL_ROOT}/cmake")
+	include(LSLAppBoilerplate)
 endif()
 
-set(target ${PROJECT_NAME})
 
-find_package(Qt5 REQUIRED COMPONENTS Widgets)
-find_package(Boost REQUIRED COMPONENTS system thread)
+# GENERAL CONFIG #
+cmake_policy(SET CMP0028 NEW) # ENABLE CMP0028: Double colon in target name means ALIAS or IMPORTED target.
+cmake_policy(SET CMP0054 NEW) # ENABLE CMP0054: Only interpret if() arguments as variables or keywords when unquoted.
+cmake_policy(SET CMP0063 NEW) # ENABLE CMP0063: Honor visibility properties for all target types.
 
-# add a target for the main executable
-add_executable(${target} MACOSX_BUNDLE WIN32
+# META CONFIG #
+set(META_PROJECT_DESCRIPTION "Stream from BrainVision Recorder's RDA client via Lab Streaming Layer")
+
+# THIRD PARTY LIBRARIES #
+find_package(Qt5 COMPONENTS Xml Widgets REQUIRED)
+find_package(Boost REQUIRED COMPONENTS thread)
+
+# Target name
+set(target BrainVisionRDA)
+
+# Sources
+set(sources
 	main.cpp
 	mainwindow.cpp
 	mainwindow.h
@@ -33,17 +43,25 @@ add_executable(${target} MACOSX_BUNDLE WIN32
 	regression.h
 )
 
-target_compile_definitions(${target} PRIVATE BOOST_REGEX_NO_LIB)
+# Add executable target
+add_executable(${target} MACOSX_BUNDLE WIN32 ${sources})
 
 target_link_libraries(${target}
 	PRIVATE
 	Qt5::Widgets
-	LSL::lsl
-	Boost::system
+	Qt5::Xml
+    Qt5::Gui
+    Qt5::Core
 	Boost::thread
+	LSL::lsl
 )
 
-installLSLApp(${target})
-installLSLAuxFiles(${target} brainvision_config.cfg)
+# Boost includes needed here because they aren't pulled in by any linked library above
+target_include_directories(${target} PRIVATE ${Boost_INCLUDE_DIRS})
 
-LSLGenerateCPackConfig()
+# Deployment
+installLSLApp(${target})
+install(FILES default_config.cfg
+	DESTINATION ${PROJECT_NAME})
+	
+installLSLAuxFiles(${target} Qt5Core.dll Qt5Gui.dll Qt5Widgets.dll)
