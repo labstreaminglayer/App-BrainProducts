@@ -51,6 +51,7 @@ private:
 
 	int enabledChannelCnt;
 	bool bIsClosed;
+	bool bIs64;
 	
 
 public:
@@ -102,6 +103,7 @@ public:
 	inline int				 getUsableChannels(void){return usableChannels;}
 	inline bool				 isClosed(void){return bIsClosed;}
 	inline bool              hasSTE(void) { return bHasSTE; }
+	inline bool              is64(void) { return bIs64; }
 };
 
 #endif //LiveAmp_H

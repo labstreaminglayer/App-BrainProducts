@@ -398,6 +398,15 @@ void MainWindow::link() {
 			// construct
 			std::string error;
 			liveAmp = new LiveAmp(strSerialNumber, fSamplingRate, useSim, RM_NORMAL);
+
+			int ret;
+			if(liveAmp->is64()) {
+				if (fSamplingRate == 1000.0)
+					ret = QMessageBox::warning(this, tr("LiveAmp Connector"),
+						tr("A sampling rate of 1kHz is not recommended for LiveAmp64"),
+						QMessageBox::Ok);
+					;// issue warning
+			}
 			//if (liveAmp->hasSTE())         // if there is a STE, set the output mode, sync values are hardcoded except for freq
 			liveAmp->setOutTriggerMode(triggerOutputMode, 8, ui->sbSyncFreq->value(), 5);
 
@@ -437,7 +446,14 @@ void MainWindow::link() {
 				auxIndices.push_back(i + 32);
 			// enable the channels on the device
 			// this will check for availability and will map everything appropriately
-			//liveAmp->enableChannels(*eegIndices, *bipolarIndices, *auxIndices, useACC);
+			// first check if we request more than 32 channels from a 32 bit device
+			if (eegChannelLabels.size() + bipolarChannelLabels.size() > 32)
+				if (!liveAmp->is64())
+					ret = QMessageBox::warning(this, tr("LiveAmp Connector"),
+						tr("This device is a LiveAmp32 but more than 32 EEG/BiPolar channels are requested.\n"
+						"If you are trying to connect to a 64 channel device, power cycle and try again."),
+						QMessageBox::Ok);
+					;// issue warning
 			liveAmp->enableChannels(eegIndices, bipolarIndices, auxIndices, useACC);
 			this->setCursor(Qt::ArrowCursor);
 			// start reader thread

@@ -12,6 +12,7 @@ LiveAmp::LiveAmp(std::string serialNumberIn, float samplingRateIn, bool useSim, 
 	
 	bIsClosed = false;
 	bHasSTE = false;
+	bIs64 = false;
 	if(useSim)
 		strcpy_s(HWI, "SIM");
 	else
@@ -44,14 +45,6 @@ LiveAmp::LiveAmp(std::string serialNumberIn, float samplingRateIn, bool useSim, 
 
 				// got a hit!
 				if (!(strcmp(sVar, serialNumberIn.c_str()))) {
-
-					// set the sampling rate on the device
-					result = ampSetProperty(hndl, PG_DEVICE, 0, DPROP_F32_BaseSampleRate, &samplingRateIn, sizeof(samplingRateIn));
-					if (result != AMP_OK) {
-						throw std::runtime_error(("Error setting sampling rate, error code:  " + boost::lexical_cast<std::string>(result)).c_str());
-						return;
-					}
-					samplingRate = samplingRateIn;
 
 					// set the device mode to recording
 					result = ampSetProperty(hndl, PG_DEVICE, 0, DPROP_I32_RecordingMode, &recordingModeIn, sizeof(recordingModeIn));
@@ -88,6 +81,31 @@ LiveAmp::LiveAmp(std::string serialNumberIn, float samplingRateIn, bool useSim, 
 							STEIdx = n;
 						}
 					}
+
+					bIs64 = false;
+					char sType[100];
+					result = ampGetProperty(h, PG_DEVICE, 0, DPROP_CHR_Type, &sType, sizeof(sType));
+					if (result != AMP_OK) {
+						throw std::runtime_error(("Error getting device name, error code:  " +
+												  boost::lexical_cast<std::string>(result))
+													 .c_str());
+						return;
+					}
+					if(!(strcmp("LiveAmp64", sType)))
+					{ 
+						bIs64 = true;
+					}
+
+					// set the sampling rate on the device
+					result = ampSetProperty(hndl, PG_DEVICE, 0, DPROP_F32_BaseSampleRate,
+						&samplingRateIn, sizeof(samplingRateIn));
+					if (result != AMP_OK) {
+						throw std::runtime_error(("Error setting sampling rate, error code:  " +
+												  boost::lexical_cast<std::string>(result))
+													 .c_str());
+						return;
+					}
+					samplingRate = samplingRateIn;
 					break;
 				}
 			}
